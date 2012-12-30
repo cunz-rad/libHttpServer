@@ -1,0 +1,5 @@
+
+PROJECT( HTTP_SERVER )
+
+ADD_SUBDIRECTORY( libHttpServer )
+
