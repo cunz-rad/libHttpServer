@@ -9,13 +9,16 @@
 
 #define CRLF "\r\n"
 
-#define HTTP_DBG if( 1 ) qDebug
+#define HTTP_DO_DBG if( 1 ) qDebug
 #define HTTP_NO_DBG if( 0 ) qDebug
 
 #define HTTP_PARSER_DBG HTTP_NO_DBG
 
+#define HTTP_DBG HTTP_NO_DBG
+
 namespace HTTP
 {
+
     static inline const char* const code2Text( int code )
     {
         switch( code )
@@ -76,6 +79,74 @@ namespace HTTP
         #undef SC
         }
         return NULL;
+    }
+
+    static inline Method method( http_method m )
+    {
+        switch( m )
+        {
+        case HTTP_DELETE:       return Delete;
+        case HTTP_GET:          return Get;
+        case HTTP_HEAD:         return Head;
+        case HTTP_POST:         return Post;
+        case HTTP_PUT:          return Put;
+        case HTTP_CONNECT:      return Connect;
+        case HTTP_OPTIONS:      return Options;
+        case HTTP_TRACE:        return Trace;
+        case HTTP_COPY:         return Copy;
+        case HTTP_LOCK:         return Lock;
+        case HTTP_MKCOL:        return MkCol;
+        case HTTP_MOVE:         return Move;
+        case HTTP_PROPFIND:     return PropFind;
+        case HTTP_PROPPATCH:    return PropPatch;
+        case HTTP_SEARCH:       return Search;
+        case HTTP_UNLOCK:       return Unlock;
+        case HTTP_REPORT:       return Report;
+        case HTTP_MKACTIVITY:   return MkActivity;
+        case HTTP_CHECKOUT:     return Checkout;
+        case HTTP_MERGE:        return Merge;
+        case HTTP_MSEARCH:      return MSearch;
+        case HTTP_NOTIFY:       return Notify;
+        case HTTP_SUBSCRIBE:    return Subscribe;
+        case HTTP_UNSUBSCRIBE:  return Unsubscribe;
+        case HTTP_PATCH:        return Patch;
+        case HTTP_PURGE:        return Purge;
+        default:                return Method(-1);
+        }
+    }
+
+    static inline const char* const method2text( Method m )
+    {
+        switch( m )
+        {
+        case Delete:        return "DELETE";
+        case Get:           return "GET";
+        case Head:          return "HEAD";
+        case Post:          return "POST";
+        case Put:           return "PUT";
+        case Connect:       return "CONNECT";
+        case Options:       return "OPTIONS";
+        case Trace:         return "TRACE";
+        case Copy:          return "COPY";
+        case Lock:          return "LOCK";
+        case MkCol:         return "MKCOL";
+        case Move:          return "MOVE";
+        case PropFind:      return "PROPFIND";
+        case PropPatch:     return "PROPPATCH";
+        case Search:        return "SEARCH";
+        case Unlock:        return "UNLOCK";
+        case Report:        return "REPORT";
+        case MkActivity:    return "MKACTIVITY";
+        case Checkout:      return "CHECKOUT";
+        case Merge:         return "MERGE";
+        case MSearch:       return "MSEARCH";
+        case Notify:        return "NOTIFY";
+        case Subscribe:     return "SUBSCRIBE";
+        case Unsubscribe:   return "UNSUBSCRIBE";
+        case Patch:         return "PATCH";
+        case Purge:         return "PURGE";
+        default: return NULL;
+        }
     }
 
     Establisher::Establisher( QObject* parent )
@@ -191,10 +262,12 @@ namespace HTTP
         }
     }
 
-    Connection::Connection( QTcpSocket* socket, QObject* parent )
+    Connection::Connection( QTcpSocket* socket, ServerBase* server, Establisher* parent )
         : QObject( parent )
+        , mConnectionId( sNextId++ )
+        , mServer( server )
         , mSocket( socket )
-        , mCurrentRequest( NULL )
+        , mNextRequest( NULL )
     {
         mParser = (http_parser*) malloc( sizeof( http_parser ) );
         http_parser_init( mParser, HTTP_REQUEST );
@@ -241,6 +314,16 @@ namespace HTTP
         mSocket->write( data.constData(), data.length() );
     }
 
+    int Connection::id() const
+    {
+        return mConnectionId;
+    }
+
+    ServerBase* Connection::server() const
+    {
+        return mServer;
+    }
+
     int Connection::onMessageBegin( http_parser* parser )
     {
         Connection* that = static_cast< Connection* >( parser->data );
@@ -248,8 +331,8 @@ namespace HTTP
 
         HTTP_PARSER_DBG( "PARSER: Message Begin" );
 
-        Q_ASSERT( !that->mCurrentRequest );
-        that->mCurrentRequest = new Request::Data;
+        Q_ASSERT( !that->mNextRequest );
+        that->mNextRequest = new Request::Data;
 
         return 0;
     }
@@ -261,8 +344,8 @@ namespace HTTP
 
         HTTP_PARSER_DBG( "PARSER: URL" );
 
-        Q_ASSERT( that->mCurrentRequest );
-        that->mCurrentRequest->mUrl = QByteArray( at, length );
+        Q_ASSERT( that->mNextRequest );
+        that->mNextRequest->mUrl += QByteArray( at, length );
 
         return 0;
     }
@@ -274,7 +357,7 @@ namespace HTTP
 
         HTTP_PARSER_DBG( "PARSER: Header Field" );
 
-        that->mCurrentHeader = HeaderName( at, length );
+        that->mNextHeader = HeaderName( at, length );
 
         return 0;
     }
@@ -286,16 +369,16 @@ namespace HTTP
 
         HTTP_PARSER_DBG( "PARSER: Header Value" );
 
-        Q_ASSERT( that->mCurrentRequest );
-        Q_ASSERT( that->mCurrentRequest->mState == Request::ReceivingHeaders );
+        Q_ASSERT( that->mNextRequest );
+        Q_ASSERT( that->mNextRequest->mState == Request::ReceivingHeaders );
 
         QByteArray data( at, length );
 
         HTTP_PARSER_DBG( "Appending '%s' to header %s",
                          data.constData(),
-                         that->mCurrentHeader.constData() );
+                         that->mNextHeader.constData() );
 
-        that->mCurrentRequest->appendHeaderData( that->mCurrentHeader, data );
+        that->mNextRequest->appendHeaderData( that->mNextHeader, data );
 
         return 0;
     }
@@ -307,9 +390,9 @@ namespace HTTP
 
         HTTP_PARSER_DBG( "PARSER: Headers Complete" );
 
-        Q_ASSERT( that->mCurrentRequest );
+        Q_ASSERT( that->mNextRequest );
 
-        Request::Data* req = that->mCurrentRequest;
+        Request::Data* req = that->mNextRequest;
 
         Q_ASSERT( req->mState == Request::ReceivingHeaders );
 
@@ -323,9 +406,11 @@ namespace HTTP
         else
             req->mVersion = V_Unknown;
 
-        that->mCurrentHeader = HeaderName();
-        req->enterRecvBody();
+        req->mMethod = method( (enum http_method) parser->method );
 
+        that->mNextHeader = HeaderName();
+
+        req->enterRecvBody();
         that->newRequest( new Request( that, req ) );
 
         return 0;
@@ -338,8 +423,15 @@ namespace HTTP
 
         HTTP_PARSER_DBG( "PARSER: Body" );
 
-        Q_ASSERT( that->mCurrentRequest );
-        Q_ASSERT( that->mCurrentRequest->mState == Request::ReceivingBody );
+        Q_ASSERT( that->mNextRequest );
+        Q_ASSERT( that->mNextRequest );
+
+        Request::Data* req = that->mNextRequest;
+        Q_ASSERT( req->mState == Request::ReceivingBody );
+
+        QByteArray data( at, length );
+
+        req->appendBodyData( data );
 
         return 0;
     }
@@ -351,11 +443,11 @@ namespace HTTP
 
         HTTP_PARSER_DBG( "PARSER: Message Complete" );
 
-        Q_ASSERT( that->mCurrentRequest );
-        Q_ASSERT( that->mCurrentRequest->mState == Request::ReceivingBody );
+        Q_ASSERT( that->mNextRequest );
+        Q_ASSERT( that->mNextRequest->mState == Request::ReceivingBody );
 
-        that->mCurrentRequest->enterFinished();
-        that->mCurrentRequest = NULL;
+        that->mNextRequest->enterFinished();
+        that->mNextRequest = NULL;
 
         return 0;
     }
@@ -369,6 +461,8 @@ namespace HTTP
         &Connection::onBody,
         &Connection::onMessageComplete
     };
+
+    int Connection::sNextId = 1;
 
     Request::Data::Data()
     {
@@ -406,6 +500,8 @@ namespace HTTP
         {
             mResponse->d->mFlags |= Response::Data::ReadyToSend;
         }
+
+        mRequest->completed( mRequest );
     }
 
     Request::Request( Connection* parent, Data* data )
@@ -425,6 +521,7 @@ namespace HTTP
         if( !d->mResponse )
         {
             Response::Data* rd = new Response::Data;
+            rd->mRequest = this;
             rd->mConnection = qobject_cast< Connection* >( parent() );
 
             if( d->mVersion < V_1_1 )
@@ -474,6 +571,11 @@ namespace HTTP
         return !d->mBodyData.isEmpty();
     }
 
+    QByteArray Request::bodyData() const
+    {
+        return d->mBodyData;
+    }
+
     Request::State Request::state() const
     {
         return d->mState;
@@ -482,6 +584,21 @@ namespace HTTP
     Version Request::httpVersion() const
     {
         return d->mVersion;
+    }
+
+    Method Request::method() const
+    {
+        return d->mMethod;
+    }
+
+    QHostAddress Request::remoteAddr() const
+    {
+        return d->mRemoteAddr;
+    }
+
+    quint16 Request::remotePort() const
+    {
+        return d->mRemotePort;
     }
 
     Response::Response( Data* data )
@@ -587,6 +704,19 @@ namespace HTTP
 
         d->mConnection->write( out );
         d->mFlags |= Data::HeadersSent;
+
+        ServerBase* svr = d->mConnection->server();
+        IAccessLog* log = svr->accessLog();
+        if( log )
+        {
+            log->access( d->mConnection->id(),
+                         d->mRequest->httpVersion(),
+                         d->mRequest->method(),
+                         d->mRequest->url(),
+                         d->mRequest->remoteAddr(),
+                         d->mRequest->remotePort(),
+                         code );
+        }
     }
 
     void Response::fixBody()
@@ -619,23 +749,39 @@ namespace HTTP
         }
     }
 
-    Server::Server( QObject* parent )
+    void ServerBase::Data::access( int connectionId, Version version, Method method,
+                                     const QUrl& url, const QHostAddress& remoteAddr,
+                                     quint16 remotePort, StatusCode response )
+    {
+        qDebug( "%i: HTTP/%s %s %s %s %i %i",
+                connectionId,
+                ((version == V_1_0) ? "1.0" : "1.1"),
+                method2text(method),
+                qPrintable( url.toString() ),
+                qPrintable( remoteAddr.toString() ),
+                remotePort,
+                response );
+    }
+
+    ServerBase::ServerBase( QObject* parent )
         : QObject( parent )
         , d( new Data )
     {
+        d->mTcpServer = NULL;
+        d->mAccessLog = NULL;
     }
 
-    Server::~Server()
+    ServerBase::~ServerBase()
     {
         delete d;
     }
 
-    bool Server::listen( quint16 port )
+    bool ServerBase::listen( quint16 port )
     {
         return listen( QHostAddress::Any, port );
     }
 
-    bool Server::listen( const QHostAddress& addr, quint16 port )
+    bool ServerBase::listen( const QHostAddress& addr, quint16 port )
     {
         if( d->mTcpServer )
         {
@@ -657,7 +803,7 @@ namespace HTTP
         return false;
     }
 
-    void Server::newConnection()
+    void ServerBase::newConnection()
     {
         Establisher* e = qobject_cast< Establisher* >( sender() );
         if( !e )
@@ -667,11 +813,26 @@ namespace HTTP
 
         while( e->hasPendingConnections() )
         {
-            Connection* c = new Connection( e->nextPendingConnection(), e );
+            Connection* c = new Connection( e->nextPendingConnection(), this, e );
             connect( c, SIGNAL(newRequest(HTTP::Request*)),
                      this, SIGNAL(newRequest(HTTP::Request*)),
                      Qt::DirectConnection );
         }
+    }
+
+    void ServerBase::setAccessLog( IAccessLog* log )
+    {
+        d->mAccessLog = log;
+    }
+
+    IAccessLog* ServerBase::accessLog() const
+    {
+        return d->mAccessLog ? d->mAccessLog : (IAccessLog*)d;
+    }
+
+    QByteArray ServerBase::methodName( Method method )
+    {
+        return method2text( method );
     }
 
 }

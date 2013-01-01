@@ -65,7 +65,7 @@ namespace HTTP
     {
         Q_OBJECT
     public:
-        Connection( QTcpSocket* socket, QObject* parent );
+        Connection( QTcpSocket* socket, ServerBase* server, Establisher* parent );
         ~Connection();
 
     signals:
@@ -78,12 +78,17 @@ namespace HTTP
     public:
         void write( const QByteArray& data );
 
+    public:
+        int id() const;
+        ServerBase* server() const;
+
     private:
-        QTcpSocket*                         mSocket;
-        http_parser*                        mParser;
-        HeaderName                          mCurrentHeader;
-        Request::Data*                      mCurrentRequest;
-        static const http_parser_settings   sParserCallbacks;
+        int             mConnectionId;
+        ServerBase*   mServer;
+        QTcpSocket*     mSocket;
+        http_parser*    mParser;
+        HeaderName      mNextHeader;
+        Request::Data*  mNextRequest;
 
     private:
         static int onMessageBegin( http_parser* parser );
@@ -93,12 +98,20 @@ namespace HTTP
         static int onHeadersComplete( http_parser* parser );
         static int onBody( http_parser* parser, const char* at, size_t length );
         static int onMessageComplete( http_parser* parser );
+
+        static int sNextId;
+        static const http_parser_settings sParserCallbacks;
     };
 
-    class Server::Data
+    class ServerBase::Data : private IAccessLog
     {
     public:
         RoundRobinServer*   mTcpServer;
+        IAccessLog*         mAccessLog;
+
+    private:
+        void access( int connectionId, Version version, Method method, const QUrl& url,
+                     const QHostAddress& remoteAddr, quint16 remotePort, StatusCode response );
     };
 
     class Request::Data
@@ -122,6 +135,7 @@ namespace HTTP
         Version         mVersion;
         quint16         mRemotePort;
         QHostAddress    mRemoteAddr;
+        Method          mMethod;
     };
 
     class Response::Data
@@ -142,6 +156,7 @@ namespace HTTP
         typedef QFlags< Flag > Flags;
 
         Connection*     mConnection;
+        Request*        mRequest;
         Flags           mFlags;
         HeadersHash     mHeaders;
         QByteArray      mBodyData;

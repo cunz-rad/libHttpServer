@@ -37,7 +37,7 @@ namespace HTTP
         PartialContent                  = 206,
 
         MultipleChoices                 = 300,
-        MoverPermanently                = 301,
+        MovedPermanently                = 301,
         Found                           = 302,
         SeeOther                        = 303,
         NotModified                     = 304,
@@ -73,7 +73,7 @@ namespace HTTP
     };
 
     enum Method {
-        Delete = 0, Get, Head, Post, Put, Connect, Options, Trace, Copy, Lock, MkCol, PropFind,
+        Delete = 0, Get, Head, Post, Put, Connect, Options, Trace, Copy, Lock, MkCol, Move, PropFind,
         PropPatch, Search, Unlock, Report, MkActivity, Checkout, Merge, MSearch, Notify, Subscribe,
         Unsubscribe, Patch, Purge
     };
@@ -111,9 +111,17 @@ namespace HTTP
         HeadersHash allHeaders() const;
 
         bool hasBodyData() const;
+        QByteArray bodyData() const;
         State state() const;
 
         Version httpVersion() const;
+        Method method() const;
+
+        QHostAddress remoteAddr() const;
+        quint16 remotePort() const;
+
+    signals:
+        void completed( HTTP::Request* request );
 
     private:
         friend class Connection;
@@ -147,16 +155,30 @@ namespace HTTP
         Data* d;
     };
 
-    class HTTP_SERVER_API Server : public QObject
+    class IAccessLog
+    {
+    public:
+        virtual ~IAccessLog() {}
+
+    public:
+        virtual void access( int connectionId, Version version, Method method, const QUrl& url,
+                             const QHostAddress& remoteAddr, quint16 remotePort,
+                             StatusCode response ) = 0;
+    };
+
+    class HTTP_SERVER_API ServerBase : public QObject
     {
         Q_OBJECT
     public:
-        Server( QObject* parent = 0 );
-        ~Server();
+        ServerBase( QObject* parent = 0 );
+        ~ServerBase();
 
     public:
         bool listen( const QHostAddress& addr, quint16 port = 0 );
         bool listen( quint16 port = 0 );
+        void setAccessLog( IAccessLog* log );
+        IAccessLog* accessLog() const;
+        static QByteArray methodName( Method method );
 
     signals:
         void newRequest( HTTP::Request* request );
