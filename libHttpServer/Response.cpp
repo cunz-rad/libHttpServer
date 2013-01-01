@@ -1,9 +1,10 @@
 
 #include <QStringBuilder>
 
+#include "libHttpServer/Internal/Http.hpp"
 #include "libHttpServer/Internal/Response.hpp"
 #include "libHttpServer/Internal/Connection.hpp"
-#include "libHttpServer/HttpServer.hpp"
+#include "libHttpServer/Internal/Server.hpp"
 
 namespace HTTP
 {
@@ -112,7 +113,7 @@ namespace HTTP
         d->mConnection->write( out );
         d->mFlags |= Data::HeadersSent;
 
-        ServerBase* svr = d->mConnection->server();
+        Server* svr = d->mConnection->server();
         IAccessLog* log = svr->accessLog();
         if( log )
         {

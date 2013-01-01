@@ -1,10 +1,9 @@
 
-#include <QThread>
-#include <QTcpSocket>
 
+#include "libHttpServer/Internal/Http.hpp"
 #include "libHttpServer/Internal/Connection.hpp"
 #include "libHttpServer/Internal/Request.hpp"
-#include "libHttpServer/Internal/http_parser.h"
+#include "libHttpServer/Internal/RoundRobinServer.hpp"
 
 namespace HTTP
 {
@@ -139,7 +138,7 @@ namespace HTTP
         }
     }
 
-    Connection::Connection( QTcpSocket* socket, ServerBase* server, Establisher* parent )
+    Connection::Connection( QTcpSocket* socket, Server* server, Establisher* parent )
         : QObject( parent )
         , mConnectionId( sNextId++ )
         , mServer( server )
@@ -196,7 +195,7 @@ namespace HTTP
         return mConnectionId;
     }
 
-    ServerBase* Connection::server() const
+    Server* Connection::server() const
     {
         return mServer;
     }

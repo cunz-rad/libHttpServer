@@ -1,13 +1,6 @@
 
-#include <QUrl>
-#include <QThread>
-#include <QTcpSocket>
-#include <QStringBuilder>
-
-#include "HttpServer.hpp"
-#include "HttpServerPrivate.hpp"
-
-#include "libHttpServer/Internal/Connection.hpp"
+#include "libHttpServer/Internal/Http.hpp"
+#include "libHttpServer/Internal/RoundRobinServer.hpp"
 
 namespace HTTP
 {
@@ -125,93 +118,5 @@ namespace HTTP
         }
     }
 
-
-
-    void AccessLogDebug::access( int connectionId, Version version, Method method,
-                                 const QUrl& url, const QHostAddress& remoteAddr,
-                                 quint16 remotePort, StatusCode response )
-    {
-        qDebug( "%i: HTTP/%s %s %s %s %i %i",
-                connectionId,
-                ((version == V_1_0) ? "1.0" : "1.1"),
-                method2text(method),
-                qPrintable( url.toString() ),
-                qPrintable( remoteAddr.toString() ),
-                remotePort,
-                response );
-    }
-
-    ServerBase::ServerBase( QObject* parent )
-        : QObject( parent )
-        , d( new Data )
-    {
-        d->mTcpServer = NULL;
-        d->mAccessLog = NULL;
-    }
-
-    ServerBase::~ServerBase()
-    {
-        delete d;
-    }
-
-    bool ServerBase::listen( quint16 port )
-    {
-        return listen( QHostAddress::Any, port );
-    }
-
-    bool ServerBase::listen( const QHostAddress& addr, quint16 port )
-    {
-        if( d->mTcpServer )
-        {
-            return false;
-        }
-
-        RoundRobinServer* tcpServer = new RoundRobinServer( this );
-
-        Establisher* e = tcpServer->addThread( QThread::currentThread() );
-
-        connect( e, SIGNAL(newConnection()), this, SLOT(newConnection()), Qt::DirectConnection );
-
-        if( tcpServer->listen( addr, port ) )
-        {
-            d->mTcpServer = tcpServer;
-            return true;
-        }
-
-        return false;
-    }
-
-    void ServerBase::newConnection()
-    {
-        Establisher* e = qobject_cast< Establisher* >( sender() );
-        if( !e )
-        {
-            return;
-        }
-
-        while( e->hasPendingConnections() )
-        {
-            Connection* c = new Connection( e->nextPendingConnection(), this, e );
-            connect( c, SIGNAL(newRequest(HTTP::Request*)),
-                     this, SIGNAL(newRequest(HTTP::Request*)),
-                     Qt::DirectConnection );
-        }
-    }
-
-    void ServerBase::setAccessLog( IAccessLog* log )
-    {
-        d->mAccessLog = log;
-    }
-
-    IAccessLog* ServerBase::accessLog() const
-    {
-        static AccessLogDebug dbg;
-        return d->mAccessLog ? d->mAccessLog : &dbg;
-    }
-
-    QByteArray ServerBase::methodName( Method method )
-    {
-        return method2text( method );
-    }
 
 }

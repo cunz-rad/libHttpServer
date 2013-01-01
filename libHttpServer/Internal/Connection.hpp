@@ -3,87 +3,25 @@
 #define HTTP_CONNECTION_HPP
 
 #include <QObject>
-#include <QMutex>
-#include <QTcpServer>
 
 #include "libHttpServer/Http.hpp"
 #include "libHttpServer/Request.hpp"
 
-#define CRLF "\r\n"
-
-#define HTTP_DO_DBG if( 1 ) qDebug
-#define HTTP_NO_DBG if( 0 ) qDebug
-
-#define HTTP_PARSER_DBG HTTP_NO_DBG
-
-#define HTTP_DBG HTTP_NO_DBG
-
-extern "C" {
-    struct http_parser;
-    struct http_parser_settings;
-}
+#include "libHttpServer/Internal/http_parser.h"
 
 class QTcpSocket;
 
 namespace HTTP
 {
 
-    class ServerBase;
-
-    class Establisher : public QObject
-    {
-        Q_OBJECT
-    public:
-        Establisher( QObject* parent = 0 );
-
-    public slots:
-        void incommingConnection( int socketDescriptor );
-
-    signals:
-        void newConnection();
-
-    public:
-        bool hasPendingConnections() const;
-        QTcpSocket* nextPendingConnection();
-
-    private:
-        mutable QMutex          mPendingMutex;
-        QList< QTcpSocket* >    mPending;
-    };
-
-    class RoundRobinServer : public QTcpServer
-    {
-        Q_OBJECT
-    public:
-        RoundRobinServer( QObject* parent );
-
-    public:
-        Establisher* addThread( QThread* thread );
-        void removeThread( QThread* thread );
-
-    private slots:
-        void threadEnded();
-
-    protected:
-        void incomingConnection( int socketDescriptor );
-
-    private:
-        struct ThreadInfo
-        {
-            QThread*        mThread;
-            Establisher*    mEstablisher;
-        };
-
-        QMutex              mThreadsMutex;
-        QList< ThreadInfo > mThreads;
-        int                 mNextHandler;
-    };
+    class Establisher;
+    class Server;
 
     class Connection : public QObject
     {
         Q_OBJECT
     public:
-        Connection( QTcpSocket* socket, ServerBase* server, Establisher* parent );
+        Connection( QTcpSocket* socket, Server* server, Establisher* parent );
         ~Connection();
 
     signals:
@@ -98,11 +36,11 @@ namespace HTTP
 
     public:
         int id() const;
-        ServerBase* server() const;
+        Server* server() const;
 
     private:
         int             mConnectionId;
-        ServerBase*     mServer;
+        Server*     mServer;
         QTcpSocket*     mSocket;
         http_parser*    mParser;
         HeaderName      mNextHeader;

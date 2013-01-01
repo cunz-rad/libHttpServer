@@ -20,12 +20,12 @@ namespace HTTP
                              StatusCode response ) = 0;
     };
 
-    class HTTP_SERVER_API ServerBase : public QObject
+    class HTTP_SERVER_API Server : public QObject
     {
         Q_OBJECT
     public:
-        ServerBase( QObject* parent = 0 );
-        ~ServerBase();
+        Server( QObject* parent = 0 );
+        ~Server();
 
     public:
         bool listen( const QHostAddress& addr, quint16 port = 0 );
