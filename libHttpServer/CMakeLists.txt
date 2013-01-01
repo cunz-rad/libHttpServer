@@ -4,15 +4,16 @@ PROJECT( LIB_HTTP_SERVER )
 QT_PREPARE( Core Network -Gui )
 
 SET( SRC_FILES
-    http_parser.c
     HttpServer.cpp
     Request.cpp
     Response.cpp
-    Connection.cpp
+
+    Internal/http_parser.c
+    Internal/Connection.cpp
 )
 
 SET( HDR_C_FILES
-    http_parser.h
+    Internal/http_parser.h
 )
 
 SET( HDR_CPP_FILES
@@ -24,10 +25,10 @@ SET( HDR_CPP_FILES
 
 SET( HDR_CPP_PRV_FILES
     HttpServerPrivate.hpp
-    RequestPrivate.hpp
-    ResponsePrivate.hpp
 
-    Connection.hpp
+    Internal/Request.hpp
+    Internal/Response.hpp
+    Internal/Connection.hpp
 )
 
 QT_MOC( MOC_FILES ${HDR_CPP_FILES} ${HDR_CPP_PRV_FILES} )

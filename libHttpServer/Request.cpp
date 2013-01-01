@@ -1,9 +1,9 @@
 
 #include <QUrl>
 
-#include "libHttpServer/RequestPrivate.hpp"
-#include "libHttpServer/ResponsePrivate.hpp"
-#include "libHttpServer/Connection.hpp"
+#include "libHttpServer/Internal/Request.hpp"
+#include "libHttpServer/Internal/Response.hpp"
+#include "libHttpServer/Internal/Connection.hpp"
 
 namespace HTTP
 {

@@ -7,7 +7,7 @@
 #include "HttpServer.hpp"
 #include "HttpServerPrivate.hpp"
 
-#include "libHttpServer/Connection.hpp"
+#include "libHttpServer/Internal/Connection.hpp"
 
 namespace HTTP
 {

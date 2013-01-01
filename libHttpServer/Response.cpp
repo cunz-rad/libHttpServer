@@ -1,8 +1,8 @@
 
 #include <QStringBuilder>
 
-#include "libHttpServer/ResponsePrivate.hpp"
-#include "libHttpServer/Connection.hpp"
+#include "libHttpServer/Internal/Response.hpp"
+#include "libHttpServer/Internal/Connection.hpp"
 #include "libHttpServer/HttpServer.hpp"
 
 namespace HTTP

@@ -2,10 +2,9 @@
 #include <QThread>
 #include <QTcpSocket>
 
-#include "libHttpServer/Connection.hpp"
-#include "libHttpServer/RequestPrivate.hpp"
-
-#include "http_parser.h"
+#include "libHttpServer/Internal/Connection.hpp"
+#include "libHttpServer/Internal/Request.hpp"
+#include "libHttpServer/Internal/http_parser.h"
 
 namespace HTTP
 {
