@@ -127,9 +127,9 @@ namespace HTTP
 
 
 
-    void ServerBase::Data::access( int connectionId, Version version, Method method,
-                                     const QUrl& url, const QHostAddress& remoteAddr,
-                                     quint16 remotePort, StatusCode response )
+    void AccessLogDebug::access( int connectionId, Version version, Method method,
+                                 const QUrl& url, const QHostAddress& remoteAddr,
+                                 quint16 remotePort, StatusCode response )
     {
         qDebug( "%i: HTTP/%s %s %s %s %i %i",
                 connectionId,
@@ -205,7 +205,8 @@ namespace HTTP
 
     IAccessLog* ServerBase::accessLog() const
     {
-        return d->mAccessLog ? d->mAccessLog : (IAccessLog*)d;
+        static AccessLogDebug dbg;
+        return d->mAccessLog ? d->mAccessLog : &dbg;
     }
 
     QByteArray ServerBase::methodName( Method method )

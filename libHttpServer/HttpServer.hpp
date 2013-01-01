@@ -3,8 +3,8 @@
 #define HTTP_SERVER_HPP
 
 #include "libHttpServer/Http.hpp"
-
-class QHostAddress;
+#include "libHttpServer/Request.hpp"
+#include "libHttpServer/Response.hpp"
 
 namespace HTTP
 {
@@ -14,9 +14,6 @@ namespace HTTP
 
     class IAccessLog
     {
-    public:
-        virtual ~IAccessLog() {}
-
     public:
         virtual void access( int connectionId, Version version, Method method, const QUrl& url,
                              const QHostAddress& remoteAddr, quint16 remotePort,

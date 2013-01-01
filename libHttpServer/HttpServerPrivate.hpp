@@ -11,17 +11,19 @@ namespace HTTP
 {
     class RoundRobinServer;
 
-    class ServerBase::Data : private IAccessLog
+    class ServerBase::Data
     {
     public:
         RoundRobinServer*   mTcpServer;
         IAccessLog*         mAccessLog;
+    };
 
-    private:
+    class AccessLogDebug : public IAccessLog
+    {
+    public:
         void access( int connectionId, Version version, Method method, const QUrl& url,
                      const QHostAddress& remoteAddr, quint16 remotePort, StatusCode response );
     };
-
 
 }
 
