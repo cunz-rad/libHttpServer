@@ -2,6 +2,8 @@
 #ifndef HTTP_RESPONSE_HPP
 #define HTTP_RESPONSE_HPP
 
+#include <QDateTime>
+
 #include "libHttpServer/Http.hpp"
 
 namespace HTTP
@@ -15,6 +17,7 @@ namespace HTTP
 
     public:
         void addHeader( const HeaderName& header, const HeaderValue& value );
+        void addHeader( const HeaderName& header, const QDateTime& value );
         bool hasHeader( const HeaderName& name ) const;
         bool headersSent() const;
 
@@ -31,6 +34,7 @@ namespace HTTP
         Response( Data* d );
         Data* d;
     };
+
 }
 
 #endif

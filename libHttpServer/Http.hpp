@@ -82,6 +82,9 @@ namespace HTTP
     typedef QByteArray HeaderValue;
     typedef QHash< HeaderName, HeaderValue > HeadersHash;
 
+    HTTP_SERVER_API QByteArray toRfc1123date( const QDateTime& dt );
+    HTTP_SERVER_API QDateTime fromRfc1123date( const QByteArray& data );
+
 }
 
 #endif

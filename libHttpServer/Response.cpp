@@ -9,6 +9,55 @@
 namespace HTTP
 {
 
+    static const char* const wkdays[] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+    static const char* const mths[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+    QByteArray toRfc1123date( const QDateTime& dt )
+    {
+        char date[ 30 ] = "xxx, 00 123 0000 11:11:11 GMT";
+
+        QDate d = dt.toUTC().date();
+        QTime t = dt.toUTC().time();
+
+        sprintf( date, "%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT",
+                 wkdays[ d.dayOfWeek() - 1 ],
+                d.day(), mths[ d.month() - 1 ], d.year(), t.hour(), t.minute(), t.second() );
+
+        return QByteArray( date );
+    }
+
+    QDateTime fromRfc1123date( const QByteArray& data )
+    {
+        if( data.count() != 29 )
+        {
+            return QDateTime();
+        }
+
+        const char* d = data.constData();
+
+        #define num(x) (((int)x)-0x30)
+
+        int day = num(d[5]) * 10 + num(d[6]);
+        int year = num(d[12]) * 1000 +
+                num(d[13]) * 100 +
+                num(d[14]) * 10 +
+                num(d[15]);
+        int month = 0;
+        for( int i = 0; i < 12; i++ )
+        {
+            if( !strncasecmp( d + 8, mths[i], 3 ) )
+                month = i + 1;
+        }
+
+        int hour = num(d[17]) * 10 + num(d[18]);
+        int min  = num(d[20]) * 10 + num(d[21]);
+        int sec  = num(d[23]) * 10 + num(d[24]);
+        #undef num
+
+        QDateTime dt( QDate( year, month, day ), QTime( hour, min, sec ), Qt::UTC );
+        return dt.toLocalTime();
+    }
+
     Response::Response( Data* data )
         : d( data )
     {
@@ -22,6 +71,11 @@ namespace HTTP
     void Response::addHeader( const HeaderName& header, const HeaderValue& value )
     {
         d->mHeaders[ header ] = value;
+    }
+
+    void Response::addHeader( const HeaderName& header, const QDateTime& value )
+    {
+        addHeader( header, toRfc1123date( value ) );
     }
 
     bool Response::headersSent() const
