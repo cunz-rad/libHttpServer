@@ -17,7 +17,6 @@
 #include "libHttpServer/Internal/Http.hpp"
 #include "libHttpServer/Internal/Connection.hpp"
 #include "libHttpServer/Internal/Request.hpp"
-#include "libHttpServer/Internal/RoundRobinServer.hpp"
 
 namespace HTTP
 {
@@ -152,7 +151,7 @@ namespace HTTP
         }
     }
 
-    Connection::Connection( QTcpSocket* socket, Server* server, Establisher* parent )
+    Connection::Connection( QTcpSocket* socket, ServerPrivate* server, Establisher* parent )
         : QObject( parent )
         , mConnectionId( sNextId++ )
         , mServer( server )
@@ -211,7 +210,7 @@ namespace HTTP
 
     Server* Connection::server() const
     {
-        return mServer;
+        return mServer->mHttpServer;
     }
 
     int Connection::onMessageBegin( http_parser* parser )
@@ -301,7 +300,8 @@ namespace HTTP
         that->mNextHeader = HeaderName();
 
         req->enterRecvBody();
-        that->newRequest( new Request( that, req ) );
+
+        that->mServer->newRequest( new Request( that, req ) );
 
         return 0;
     }

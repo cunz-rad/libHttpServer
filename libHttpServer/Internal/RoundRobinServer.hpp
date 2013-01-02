@@ -27,35 +27,29 @@
 namespace HTTP
 {
 
+    class ServerPrivate;
+
     class Establisher : public QObject
     {
         Q_OBJECT
     public:
-        Establisher( QObject* parent = 0 );
+        Establisher( ServerPrivate* server );
 
     public slots:
         void incommingConnection( int socketDescriptor );
 
-    signals:
-        void newConnection();
-
-    public:
-        bool hasPendingConnections() const;
-        QTcpSocket* nextPendingConnection();
-
     private:
-        mutable QMutex          mPendingMutex;
-        QList< QTcpSocket* >    mPending;
+        ServerPrivate*          mServer;
     };
 
     class RoundRobinServer : public QTcpServer
     {
         Q_OBJECT
     public:
-        RoundRobinServer( QObject* parent );
+        RoundRobinServer( QObject* parent, ServerPrivate* server );
 
     public:
-        Establisher* addThread( QThread* thread );
+        void addThread( QThread* thread );
         void removeThread( QThread* thread );
 
     private slots:
@@ -74,6 +68,7 @@ namespace HTTP
         QMutex              mThreadsMutex;
         QList< ThreadInfo > mThreads;
         int                 mNextHandler;
+        ServerPrivate*      mServer;
     };
 
 }

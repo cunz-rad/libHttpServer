@@ -39,10 +39,16 @@ namespace HTTP
         }
     };
 
+    void ServerPrivate::newRequest( Request* request )
+    {
+        mHttpServer->newRequest( request );
+    }
+
     Server::Server( QObject* parent )
         : QObject( parent )
-        , d( new Data )
+        , d( new ServerPrivate )
     {
+        d->mHttpServer = this;
         d->mTcpServer = NULL;
         d->mAccessLog = NULL;
     }
@@ -64,11 +70,8 @@ namespace HTTP
             return false;
         }
 
-        RoundRobinServer* tcpServer = new RoundRobinServer( this );
-
-        Establisher* e = tcpServer->addThread( QThread::currentThread() );
-
-        connect( e, SIGNAL(newConnection()), this, SLOT(newConnection()), Qt::DirectConnection );
+        RoundRobinServer* tcpServer = new RoundRobinServer( this, d );
+        tcpServer->addThread( QThread::currentThread() );
 
         if( tcpServer->listen( addr, port ) )
         {
@@ -77,23 +80,6 @@ namespace HTTP
         }
 
         return false;
-    }
-
-    void Server::newConnection()
-    {
-        Establisher* e = qobject_cast< Establisher* >( sender() );
-        if( !e )
-        {
-            return;
-        }
-
-        while( e->hasPendingConnections() )
-        {
-            Connection* c = new Connection( e->nextPendingConnection(), this, e );
-            connect( c, SIGNAL(newRequest(HTTP::Request*)),
-                     this, SIGNAL(newRequest(HTTP::Request*)),
-                     Qt::DirectConnection );
-        }
     }
 
     void Server::setAccessLog( IAccessLog* log )

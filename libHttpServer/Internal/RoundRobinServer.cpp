@@ -16,66 +16,46 @@
 
 #include "libHttpServer/Internal/Http.hpp"
 #include "libHttpServer/Internal/RoundRobinServer.hpp"
+#include "libHttpServer/Internal/Connection.hpp"
 
 namespace HTTP
 {
 
-    Establisher::Establisher( QObject* parent )
-        : QObject( parent )
+    Establisher::Establisher( ServerPrivate* server )
+        : QObject( NULL )
+        , mServer( server )
     {
     }
 
     void Establisher::incommingConnection( int socketDescriptor )
     {
-        QMutexLocker l( &mPendingMutex );
         QTcpSocket* sock = new QTcpSocket( this );
         sock->setSocketDescriptor( socketDescriptor );
-        mPending.append( sock );
-        l.unlock();
 
         HTTP_DBG( "incomming connection; Sock=%i; Thread=%p; TcpSocket=%p",
                   socketDescriptor, QThread::currentThread(), sock );
 
-        emit newConnection();
+        new Connection( sock, mServer, this );
     }
 
-    bool Establisher::hasPendingConnections() const
-    {
-        QMutexLocker l( &mPendingMutex );
-
-        return !mPending.isEmpty();
-    }
-
-    QTcpSocket* Establisher::nextPendingConnection()
-    {
-        QMutexLocker l( &mPendingMutex );
-
-        if( !mPending.isEmpty() )
-        {
-            return mPending.takeFirst();
-        }
-
-        return NULL;
-    }
-
-    RoundRobinServer::RoundRobinServer( QObject* parent )
+    RoundRobinServer::RoundRobinServer( QObject* parent, ServerPrivate* server )
         : QTcpServer( parent )
+        , mNextHandler( 0 )
+        , mServer( server )
     {
     }
 
-    Establisher* RoundRobinServer::addThread( QThread* thread )
+    void RoundRobinServer::addThread( QThread* thread )
     {
         QMutexLocker l( &mThreadsMutex );
 
-        Establisher* e = new Establisher;
+        Establisher* e = new Establisher( mServer );
         e->moveToThread( thread );
 
         ThreadInfo ti;
         ti.mEstablisher = e;
         ti.mThread = thread;
         mThreads.append( ti );
-
-        return e;
     }
 
     void RoundRobinServer::removeThread( QThread* thread )

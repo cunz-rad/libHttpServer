@@ -14,17 +14,26 @@
  *
  */
 
+#ifndef HTTP_SERVER_PRIVATE_HPP
+#define HTTP_SERVER_PRIVATE_HPP
+
 #include "libHttpServer/Server.hpp"
 #include "libHttpServer/Internal/RoundRobinServer.hpp"
 
 namespace HTTP
 {
 
-    class Server::Data
+    class ServerPrivate
     {
     public:
+        Server*             mHttpServer;
         RoundRobinServer*   mTcpServer;
         IAccessLog*         mAccessLog;
+
+    public:
+        void newRequest( Request* request );
     };
 
 }
+
+#endif

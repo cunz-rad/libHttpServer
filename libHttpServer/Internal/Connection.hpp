@@ -22,25 +22,22 @@
 #include "libHttpServer/Http.hpp"
 #include "libHttpServer/Request.hpp"
 
+#include "libHttpServer/Internal/Server.hpp"
 #include "libHttpServer/Internal/http_parser.h"
-
-class QTcpSocket;
 
 namespace HTTP
 {
 
     class Establisher;
     class Server;
+    class Session;
 
     class Connection : public QObject
     {
         Q_OBJECT
     public:
-        Connection( QTcpSocket* socket, Server* server, Establisher* parent );
+        Connection( QTcpSocket* socket, ServerPrivate* server, Establisher* parent );
         ~Connection();
-
-    signals:
-        void newRequest( HTTP::Request* request );
 
     private slots:
         void dataArrived();
@@ -52,10 +49,12 @@ namespace HTTP
     public:
         int id() const;
         Server* server() const;
+        Session* session() const;
 
     private:
         int             mConnectionId;
-        Server*     mServer;
+        ServerPrivate*  mServer;
+        Session*        mSession;
         QTcpSocket*     mSocket;
         http_parser*    mParser;
         HeaderName      mNextHeader;

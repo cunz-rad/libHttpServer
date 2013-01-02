@@ -35,6 +35,7 @@ namespace HTTP
                              StatusCode response ) = 0;
     };
 
+    class ServerPrivate;
     class HTTP_SERVER_API Server : public QObject
     {
         Q_OBJECT
@@ -52,12 +53,9 @@ namespace HTTP
     signals:
         void newRequest( HTTP::Request* request );
 
-    private slots:
-        void newConnection();
-
     private:
-        class Data;
-        Data* d;
+        friend class ServerPrivate;
+        ServerPrivate* d;
     };
 
 }
