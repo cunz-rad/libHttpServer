@@ -14,29 +14,14 @@
  *
  */
 
-#ifndef HTTP_SERVER_PRIVATE_HPP
-#define HTTP_SERVER_PRIVATE_HPP
-
-#include "libHttpServer/Server.hpp"
-#include "libHttpServer/Internal/RoundRobinServer.hpp"
+#include "libHttpServer/Session.hpp"
 
 namespace HTTP
 {
 
-    class ContentProvider;
-
-    class ServerPrivate
+    Session::Session( QObject* parent )
+        : QObject( parent )
     {
-    public:
-        Server*             mHttpServer;
-        RoundRobinServer*   mTcpServer;
-        IAccessLog*         mAccessLog;
-        QList< ContentProvider* >   mProviders;
-
-    public:
-        void newRequest( Request* request );
-    };
+    }
 
 }
-
-#endif

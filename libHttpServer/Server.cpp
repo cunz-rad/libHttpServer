@@ -18,6 +18,7 @@
 
 #include "libHttpServer/Internal/Server.hpp"
 #include "libHttpServer/Internal/Connection.hpp"
+#include "libHttpServer/ContentProvider.hpp"
 
 namespace HTTP
 {
@@ -41,6 +42,16 @@ namespace HTTP
 
     void ServerPrivate::newRequest( Request* request )
     {
+        QUrl u = request->url();
+        foreach( ContentProvider* cp, mProviders )
+        {
+            if( cp->canHandle( u ) )
+            {
+                cp->newRequest( request );
+                return;
+            }
+        }
+
         mHttpServer->newRequest( request );
     }
 
@@ -91,6 +102,11 @@ namespace HTTP
     {
         static AccessLogDebug dbg;
         return d->mAccessLog ? d->mAccessLog : &dbg;
+    }
+
+    void Server::addProvider( ContentProvider* provider )
+    {
+        d->mProviders.append( provider );
     }
 
     QByteArray Server::methodName( Method method )

@@ -26,6 +26,7 @@ namespace HTTP
 
     class Request;
     class Connection;
+    class ContentProvider;
 
     class IAccessLog
     {
@@ -49,6 +50,8 @@ namespace HTTP
         void setAccessLog( IAccessLog* log );
         IAccessLog* accessLog() const;
         static QByteArray methodName( Method method );
+
+        void addProvider( ContentProvider* provider );
 
     signals:
         void newRequest( HTTP::Request* request );

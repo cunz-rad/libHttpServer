@@ -7,6 +7,9 @@ SET( SRC_FILES
     Request.cpp
     Response.cpp
     Server.cpp
+    Session.cpp
+    Cookie.cpp
+    ContentProvider.cpp
 
     Internal/http_parser.c
     Internal/Connection.cpp
@@ -22,6 +25,9 @@ SET( HDR_CPP_FILES
     Request.hpp
     Response.hpp
     Server.hpp
+    Session.hpp
+    Cookie.hpp
+    ContentProvider.hpp
 )
 
 SET( HDR_CPP_PRV_FILES
