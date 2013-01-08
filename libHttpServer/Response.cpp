@@ -211,6 +211,12 @@ namespace HTTP
         send();
     }
 
+    void Response::finish( StatusCode code )
+    {
+        fixBody();
+        send( code );
+    }
+
     void Response::send()
     {
         Q_ASSERT( headersSent() );

@@ -41,6 +41,7 @@ namespace HTTP
 
         void sendHeaders( StatusCode code );
         void send( StatusCode code );
+        void finish( StatusCode code );
         void send();
 
     private:
