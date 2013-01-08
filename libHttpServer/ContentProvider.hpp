@@ -41,8 +41,8 @@ namespace HTTP
         StaticContentProvider( const QString& prefix, const QString& basePath, QObject* parent );
 
     public:
-        virtual bool canHandle( const QUrl& url ) const;
-        virtual void newRequest( Request* request );
+        bool canHandle( const QUrl& url ) const;
+        void newRequest( Request* request );
 
     public:
         void addMimeType( const QRegExp& regEx, const QByteArray& mimeType );

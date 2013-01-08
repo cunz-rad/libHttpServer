@@ -4,16 +4,16 @@ PROJECT( LIB_HTTP_SERVER )
 QT_PREPARE( Core Network -Gui )
 
 SET( SRC_FILES
+    Internal/http_parser.c
+    Internal/Connection.cpp
+    Internal/RoundRobinServer.cpp
+
     Request.cpp
     Response.cpp
     Server.cpp
     Session.cpp
     Cookie.cpp
     ContentProvider.cpp
-
-    Internal/http_parser.c
-    Internal/Connection.cpp
-    Internal/RoundRobinServer.cpp
 )
 
 SET( HDR_C_FILES
