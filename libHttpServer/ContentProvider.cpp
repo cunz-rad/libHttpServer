@@ -68,7 +68,7 @@ namespace HTTP
         {
             QDateTime dt = HTTP::fromRfc1123date( request->header( "If-Modified-Since" ) );
 
-            if( dt <= fi.lastModified() )
+            if( fi.lastModified() <= dt )
             {
                 res->fixBody();
                 res->send( HTTP::NotModified );
