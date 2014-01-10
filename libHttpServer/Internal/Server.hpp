@@ -31,6 +31,8 @@ namespace HTTP
         Server*             mHttpServer;
         RoundRobinServer*   mTcpServer;
         IAccessLog*         mAccessLog;
+        int                 mThrottledTo;   // Bytes per 10th of second
+                                            // 10240 = 1kB/s; 0 = unlimited
         QList< ContentProvider* >   mProviders;
 
     public:

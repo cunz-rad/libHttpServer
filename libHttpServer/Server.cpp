@@ -62,6 +62,7 @@ namespace HTTP
         d->mHttpServer = this;
         d->mTcpServer = NULL;
         d->mAccessLog = NULL;
+        d->mThrottledTo = 0;
     }
 
     Server::~Server()

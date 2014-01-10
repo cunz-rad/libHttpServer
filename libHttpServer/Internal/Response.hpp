@@ -14,9 +14,9 @@
  *
  */
 
-#ifndef HTTP_RESPONSE_PRIVATE_HPP
-#define HTTP_RESPONSE_PRIVATE_HPP
+#pragma once
 
+#include <QPointer>
 
 #include "libHttpServer/Response.hpp"
 
@@ -39,17 +39,15 @@ namespace HTTP
             DataIsCompressed    = 1 << 28,
             SendAtOnce          = 1 << 29,
             ReadyToSend         = 1 << 30,
-            HeadersSent         = 1 << 31
+            HeadersWritten      = 1 << 31
         };
         typedef QFlags< Flag > Flags;
 
-        Connection*     mConnection;
-        Request*        mRequest;
-        Flags           mFlags;
-        HeadersHash     mHeaders;
-        QByteArray      mBodyData;
+        QPointer<Connection>    mConnection;
+        QPointer<Request>       mRequest;
+        Flags                   mFlags;
+        HeadersHash             mHeaders;
+        QByteArray              mBodyData;
     };
 
 }
-
-#endif

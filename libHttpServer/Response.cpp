@@ -95,7 +95,7 @@ namespace HTTP
 
     bool Response::headersSent() const
     {
-        return d->mFlags.testFlag( Data::HeadersSent );
+        return d->mFlags.testFlag( Data::HeadersWritten );
     }
 
     bool Response::hasHeader( const HeaderName& name ) const
@@ -179,8 +179,8 @@ namespace HTTP
 
         HTTP_DBG( "Out: %s", out.constData() );
 
-        d->mConnection->write( out );
-        d->mFlags |= Data::HeadersSent;
+        d->mConnection->write(out);
+        d->mFlags |= Data::HeadersWritten;
 
         Server* svr = d->mConnection->server();
         IAccessLog* log = svr->accessLog();
@@ -230,6 +230,7 @@ namespace HTTP
         {
             d->mConnection->write( d->mBodyData );
         }
+        deleteLater();
     }
 
 }

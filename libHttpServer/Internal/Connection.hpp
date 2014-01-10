@@ -42,6 +42,7 @@ namespace HTTP
     private slots:
         void dataArrived();
         void socketLost();
+        void maybeSend();
 
     public:
         void write( const QByteArray& data );
@@ -59,6 +60,7 @@ namespace HTTP
         http_parser*    mParser;
         HeaderName      mNextHeader;
         Request::Data*  mNextRequest;
+        QByteArray      mOutput;
 
     private:
         static int onMessageBegin( http_parser* parser );

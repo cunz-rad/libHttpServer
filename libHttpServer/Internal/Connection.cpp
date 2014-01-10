@@ -14,6 +14,8 @@
  *
  */
 
+#include <QTimer>
+
 #include "libHttpServer/Internal/Http.hpp"
 #include "libHttpServer/Internal/Connection.hpp"
 #include "libHttpServer/Internal/Request.hpp"
@@ -62,7 +64,7 @@ namespace HTTP
             SC(415, "Unsupported Media Type")
             SC(416, "Requested Range Not Satisfiable")
             SC(417, "Expectation Failed")
-            SC(418, "I\"m a teapot")              // RFC 2324
+            SC(418, "I'm a teapot")               // RFC 2324
             SC(422, "Unprocessable Entity")       // RFC 4918
             SC(423, "Locked")                     // RFC 4918
             SC(424, "Failed Dependency")          // RFC 4918
@@ -198,9 +200,15 @@ namespace HTTP
         deleteLater();
     }
 
-    void Connection::write( const QByteArray& data )
+    void Connection::write(const QByteArray& data)
     {
-        mSocket->write( data.constData(), data.length() );
+        if (mOutput.isEmpty()) {
+            mOutput = data;
+        }
+        else {
+            mOutput += data;
+        }
+        maybeSend();
     }
 
     int Connection::id() const
@@ -340,6 +348,31 @@ namespace HTTP
         that->mNextRequest = NULL;
 
         return 0;
+    }
+
+    void Connection::maybeSend()
+    {
+        if (mOutput.isEmpty()) {
+            return;
+        }
+        if (!mServer->mThrottledTo) {
+            mSocket->write(mOutput.constData(), mOutput.count());
+            mOutput.clear();
+            return;
+        }
+
+        if (mOutput.count() <= mServer->mThrottledTo) {
+            mSocket->write(mOutput.constData(), mOutput.count());
+            mOutput.clear();
+            return;
+        }
+
+        mSocket->write(mOutput.constData(), mServer->mThrottledTo);
+        mOutput.remove(0, mServer->mThrottledTo);
+
+        if (!mOutput.isEmpty()) {
+            QTimer::singleShot(200, this, SLOT(maybeSend()));
+        }
     }
 
     const http_parser_settings Connection::sParserCallbacks = {

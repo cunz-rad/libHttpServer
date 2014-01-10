@@ -52,3 +52,12 @@ ADD_QT_LIBRARY(
     ${MOC_FILES}
 )
 
+# This is required only for Qt4-Static, but we can't figure that out
+IF(APPLE)
+    TARGET_LINK_LIBRARIES(HttpServer LINK_PUBLIC
+        "-framework ApplicationServices"
+        "-framework CoreFoundation"
+        "-framework Security"
+        "-framework SystemConfiguration"
+    )
+ENDIF()
